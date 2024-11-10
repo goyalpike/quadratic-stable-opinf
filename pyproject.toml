@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "quadratic-stable-opinf"
+version = "0.1.0"
+description = ""
+authors = ["Pawan Goyal <pkgpawan@gmail.com>"]
+readme = "README.md"
+
+# Define the source directory
+packages = [
+    { include = "qs_opinf", from = "src" }
+]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+scikit-learn = "^1.5.2"
+scipy = "^1.14.1"
+jupyter = "^1.1.1"
+matplotlib = "^3.9.2"
+numpy="1.23.5"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

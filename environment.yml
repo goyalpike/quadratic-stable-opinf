@@ -1,0 +1,9 @@
+name: quad-stable-opinf
+channels:
+  - pytorch
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pytorch=1.13
+  - numpy=1.23
+  - poetry
