@@ -15,6 +15,7 @@ from scipy.io import loadmat, savemat
 from qs_opinf import module_models
 from qs_opinf.module_training import training
 from qs_opinf.utils import ddt_uniform, reprod_seed
+from qs_opinf.constants import data_path
 
 font = {"family": "normal", "weight": "bold", "size": 20}
 

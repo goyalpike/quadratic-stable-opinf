@@ -16,6 +16,7 @@ from scipy.linalg import block_diag
 from qs_opinf import module_models
 from qs_opinf.module_training import training
 from qs_opinf.utils import ddt_uniform, reprod_seed
+from qs_opinf.constants import data_path, results_path
 
 font = {"family": "normal", "weight": "bold", "size": 20}
 
@@ -61,14 +62,14 @@ args = parser.parse_args()
 Params.num_epochs = args.epochs
 
 path_funcs = {
-    "no_hypos": ("./Results/Chafee/NoStability/", module_models.ModelHypothesis, True),
+    "no_hypos": (str(results_path / "Chafee/NoStability/"), module_models.ModelHypothesis, True),
     "localstability": (
-        "./Results/Chafee/LocalStability/",
+        str(results_path / "Chafee/LocalStability/"),
         module_models.ModelHypothesisLocalStable,
         False,
     ),
     "globalstability": (
-        "./Results/Chafee/GlobalStability/",
+        str(results_path / "Chafee/GlobalStability/"),
         module_models.ModelHypothesisGlobalStable,
         False,
     ),
@@ -82,7 +83,8 @@ if not os.path.exists(Params.path):
 
 
 # ## Loading data
-data = loadmat("./Burgers_data/Chafee_data_inits_conditions.mat")
+
+data = loadmat(data_path / "Chafee_data_inits_conditions.mat")
 
 X_all = data["X_data"].transpose(0, 2, 1)
 X_all.shape
@@ -145,6 +147,7 @@ for i in range(1, X.shape[0]):
 [U, S, V] = np.linalg.svd(temp_X)
 
 TOLS = np.logspace(np.log10(5e-2), -4, 8)
+TOLS = [5e-2]
 reduced_orders = []
 for tol in TOLS:
     reprod_seed(42)
