@@ -85,7 +85,9 @@ class ModelHypothesisGlobalStable(nn.Module):
         self._R = torch.nn.Parameter(torch.randn(sys_order, sys_order) / FAC)
 
         self.B = torch.nn.Parameter(torch.zeros(sys_order, 1))
-        self._H_tensor = torch.nn.Parameter(torch.zeros(sys_order, sys_order, sys_order) / FAC)
+        self._H_tensor = torch.nn.Parameter(
+            torch.zeros(sys_order, sys_order, sys_order) / FAC
+        )
         print("B_term:", self.B_term)
 
     @property
@@ -134,7 +136,9 @@ class SINDy_NoStable(nn.Module):
 
         self.B = torch.nn.Parameter(torch.zeros(sys_order, 1))
         self.m = torch.zeros(1, sys_order)
-        self._H_tensor = torch.nn.Parameter(torch.zeros(sys_order, sys_order, sys_order) / fac)
+        self._H_tensor = torch.nn.Parameter(
+            torch.zeros(sys_order, sys_order, sys_order) / fac
+        )
 
     @property
     def A(self):
@@ -176,7 +180,9 @@ class SINDy_Stable_Trapping(nn.Module):
 
         self.B = torch.nn.Parameter(torch.zeros(sys_order, 1))
         self.m = torch.nn.Parameter(torch.zeros(1, sys_order))
-        self._H_tensor = torch.nn.Parameter(torch.zeros(sys_order, sys_order, sys_order) / fac)
+        self._H_tensor = torch.nn.Parameter(
+            torch.zeros(sys_order, sys_order, sys_order) / fac
+        )
 
     @property
     def A(self):
@@ -227,7 +233,9 @@ class ModelHypothesisNoStable_MHD(nn.Module):
 
         self.B = torch.nn.Parameter(torch.zeros(sys_order, 1))
         self.m = torch.zeros(1, sys_order)
-        self._H_tensor = torch.nn.Parameter(torch.zeros(sys_order, sys_order, sys_order) / fac)
+        self._H_tensor = torch.nn.Parameter(
+            torch.zeros(sys_order, sys_order, sys_order) / fac
+        )
 
     @property
     def A(self):
@@ -270,7 +278,9 @@ class ModelHypothesisGlobalStable_MHD(nn.Module):
         # self.B = torch.nn.Parameter(torch.zeros(sys_order,1))
         self.B = torch.zeros(sys_order, 1)
         self.m = torch.nn.Parameter(torch.zeros(1, sys_order))
-        self._H_tensor = torch.nn.Parameter(torch.zeros(sys_order, sys_order, sys_order) / fac)
+        self._H_tensor = torch.nn.Parameter(
+            torch.zeros(sys_order, sys_order, sys_order) / fac
+        )
 
     @property
     def A(self):

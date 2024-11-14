@@ -284,7 +284,9 @@ def ddt_uniform(states, dt, order=2):
     n, k = states.shape
     if order == 4:
         # Central difference on interior.
-        ddts[:, 2:-2] = (Q[:, :-4] - 8 * Q[:, 1:-3] + 8 * Q[:, 3:-1] - Q[:, 4:]) / (12 * dt)
+        ddts[:, 2:-2] = (Q[:, :-4] - 8 * Q[:, 1:-3] + 8 * Q[:, 3:-1] - Q[:, 4:]) / (
+            12 * dt
+        )
 
         # Forward / backward differences on the front / end.
         for j in range(2):
@@ -308,7 +310,9 @@ def ddt_uniform(states, dt, order=2):
             ddts[:, -j - 1] = -_fwd6(Q[:, -j - 7 : k - j].T[::-1], dt)  # Backward
 
     else:
-        raise NotImplementedError(f"invalid order '{order}'; valid options: {{2, 4, 6}}")
+        raise NotImplementedError(
+            f"invalid order '{order}'; valid options: {{2, 4, 6}}"
+        )
 
     return ddts
 
@@ -352,5 +356,11 @@ def _fwd6(y, dt):
 
     """
     return (
-        -147 * y[0] + 360 * y[1] - 450 * y[2] + 400 * y[3] - 225 * y[4] + 72 * y[5] - 10 * y[6]
+        -147 * y[0]
+        + 360 * y[1]
+        - 450 * y[2]
+        + 400 * y[3]
+        - 225 * y[4]
+        + 72 * y[5]
+        - 10 * y[6]
     ) / (60 * dt)
