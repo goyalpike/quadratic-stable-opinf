@@ -39,7 +39,7 @@ echo ""
 python Example_Chafee_Stability.py --model_hypothesis globalstability --epochs $EPOCHS
 echo ""
 
-jupyter nbconvert --execute --to notebook --inplace plotting/Plotting_Chafee.ipynb
+# jupyter nbconvert --execute --to notebook --inplace plotting/Plotting_Chafee.ipynb
 
 # echo "##################################################################"
 # echo "############# Running Burgers Example with Dirichlet #############"

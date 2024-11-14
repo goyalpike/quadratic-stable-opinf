@@ -1,11 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Jul 24 11:25:50 2022
-
-@author: Pawan Goyal
-"""
-import os
 import sys
 
 import numpy as np
@@ -16,6 +9,19 @@ from qs_opinf.utils import rk4th_onestep
 
 
 def training(model, dataloaders, opt_func, Params, scheduler=None):
+    """Given model, dataloaders and optimizer, it optimizes models/parameters.
+
+    Args:
+        model: Neural network model
+        dataloaders: Training data
+        opt_func: Optimizer
+        Params: Parameters (e.g., number of epochs)
+        scheduler (optional): Learning rate sheduler. Defaults to None.
+
+    Returns
+    -------
+        (model, loss): Trained model and loss wrt epoch.
+    """
     print("#" * 75)
     criteria = nn.MSELoss()
     loss_track = []

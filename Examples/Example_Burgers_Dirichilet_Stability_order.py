@@ -38,8 +38,9 @@ class parameters:
     bs: int = 8
     num_epochs: int = 2000
     normalizing_coeffs: bool = False
-    path: str = None
-    model_hypothesis: str = None
+    path: str | None = None
+    model_hypothesis: str | None = None
+    regularization_H: float = 0.0
 
 
 Params = parameters()
@@ -59,7 +60,11 @@ args = parser.parse_args()
 Params.num_epochs = args.epochs
 
 path_funcs = {
-    "no_hypos": ("./Results/Burgers_Dirichilet/NoStability/", module_models.ModelHypothesis, True),
+    "no_hypos": (
+        "./Results/Burgers_Dirichilet/NoStability/",
+        module_models.ModelHypothesis,
+        True,
+    ),
     "localstability": (
         "./Results/Burgers_Dirichilet/LocalStability/",
         module_models.ModelHypothesisLocalStable,
@@ -146,193 +151,185 @@ ax.legend([])
 
 reduced_orders = np.arange(16, 31, 2)
 print(f"reduced_order are {reduced_orders}!")
-PATH = Params.path + 'orders' +'/'
+PATH = Params.path + "orders" + "/"
 
 for r in reduced_orders:
-	font = {"family": "normal", "weight": "bold", "size": 18}
+    font = {"family": "normal", "weight": "bold", "size": 18}
 
-	matplotlib.rc("font", **font)
-	plt.rcParams["text.usetex"] = True
+    matplotlib.rc("font", **font)
+    plt.rcParams["text.usetex"] = True
 
-	print("\n")
+    print("\n")
 
-	print(f"Order of reduced model: {r}")
-	print(f"Energy captured by the snapshots: {100*sum(S[:r])/sum(S)}%")
-	# preparing reduced data, approximating derivative information, and dataloader for training
-	temp_Xr = U[:, :r].T @ temp_X  # reduced data
+    print(f"Order of reduced model: {r}")
+    print(f"Energy captured by the snapshots: {100 * sum(S[:r]) / sum(S)}%")
+    # preparing reduced data, approximating derivative information, and dataloader for training
+    temp_Xr = U[:, :r].T @ temp_X  # reduced data
 
-	if Params.normalizing_coeffs:
-		scaling_fac = np.max(np.abs(temp_Xr))
-	else:
-		scaling_fac = 1.0
+    if Params.normalizing_coeffs:
+        scaling_fac = np.max(np.abs(temp_Xr))
+    else:
+        scaling_fac = 1.0
 
-	temp_Xr = temp_Xr / scaling_fac
+    temp_Xr = temp_Xr / scaling_fac
 
-	Xr = np.zeros((num_inits, r, temp_Xr.shape[-1] // num_inits))
-	dXr = np.zeros((num_inits, r, temp_Xr.shape[-1] // num_inits))
+    Xr = np.zeros((num_inits, r, temp_Xr.shape[-1] // num_inits))
+    dXr = np.zeros((num_inits, r, temp_Xr.shape[-1] // num_inits))
 
-	for i in range(0, num_inits):
-		temp = int(temp_Xr.shape[-1] // num_inits)
-		temp_x = temp_Xr[:, i * temp : (i + 1) * temp]
-		temp_dx = ddt_uniform(temp_x, (t_train[1] - t_train[0]).item(), order=4)
-		Xr[i] = temp_x
-		dXr[i] = temp_dx
+    for i in range(0, num_inits):
+        temp = int(temp_Xr.shape[-1] // num_inits)
+        temp_x = temp_Xr[:, i * temp : (i + 1) * temp]
+        temp_dx = ddt_uniform(temp_x, (t_train[1] - t_train[0]).item(), order=4)
+        Xr[i] = temp_x
+        dXr[i] = temp_dx
 
-	# Define dataloaders
-	t1 = (torch.arange(0, Xr.shape[-1]) * (t_train[1] - t_train[0])).reshape(-1, 1)
+    # Define dataloaders
+    t1 = (torch.arange(0, Xr.shape[-1]) * (t_train[1] - t_train[0])).reshape(-1, 1)
 
-	train_dset = list(
-		zip(
-			torch.tensor(Xr).permute((0, 2, 1)).double(),
-			torch.stack([t1 for _ in range(num_inits)], axis=0),
-			torch.tensor(dXr).permute((0, 2, 1)).double(),
-		)
-	)
-	train_dl = torch.utils.data.DataLoader(
-		train_dset, batch_size=Params.bs, shuffle=True
-	)
-	dataloaders = {"train": train_dl}
-	
-	Reg_H = [1e-3]
-	for reg_h in Reg_H:
-		Params.path = PATH 
-		if not os.path.exists(Params.path):
-			os.makedirs(Params.path)
-		print(Params.path)
-		print(reg_h)
+    train_dset = list(
+        zip(
+            torch.tensor(Xr).permute((0, 2, 1)).double(),
+            torch.stack([t1 for _ in range(num_inits)], axis=0),
+            torch.tensor(dXr).permute((0, 2, 1)).double(),
+        )
+    )
+    train_dl = torch.utils.data.DataLoader(train_dset, batch_size=Params.bs, shuffle=True)
+    dataloaders = {"train": train_dl}
 
-		Params.regularization_H = reg_h
+    Reg_H = [1e-3]
+    for reg_h in Reg_H:
+        Params.path = PATH
+        if not os.path.exists(Params.path):
+            os.makedirs(Params.path)
+        print(Params.path)
+        print(reg_h)
 
-		model = model_hypothesis_function(sys_order=r, B_term=B_term).double()
+        Params.regularization_H = reg_h
 
-		opt_func = torch.optim.Adam(model.parameters())
-		scheduler = torch.optim.lr_scheduler.CyclicLR(
-			opt_func,
-			step_size_up=2000 * len(dataloaders["train"]),
-			mode="triangular",
-			cycle_momentum=False,
-			base_lr=1e-6,
-			max_lr=5e-3,
-		)
+        model = model_hypothesis_function(sys_order=r, B_term=B_term).double()  # type: ignore[attr-defined]
 
-		model, loss_track = training(
-			model, dataloaders, opt_func, Params, scheduler=scheduler
-		)
+        opt_func = torch.optim.Adam(model.parameters())
+        scheduler = torch.optim.lr_scheduler.CyclicLR(
+            opt_func,
+            step_size_up=2000 * len(dataloaders["train"]),
+            mode="triangular",
+            cycle_momentum=False,
+            base_lr=1e-6,
+            max_lr=5e-3,
+        )
 
-		## Learned model
-		A_OpInf = model.A.detach().numpy()
-		H_OpInf = model.H.detach().numpy()
-		B_OpInf = (
-			model.B.detach()
-			.numpy()
-			.reshape(
-				-1,
-			)
-		)
+        model, loss_track = training(model, dataloaders, opt_func, Params, scheduler=scheduler)
 
-		def model_quad_OpInf(t, x):
-			return A_OpInf @ x + H_OpInf @ np.kron(x, x) + B_OpInf
+        ## Learned model
+        A_OpInf = model.A.detach().numpy()
+        H_OpInf = model.H.detach().numpy()
+        B_OpInf = (
+            model.B.detach()
+            .numpy()
+            .reshape(
+                -1,
+            )
+        )
 
-		x = np.arange(0, 1, 1 / 250)
-		y_testing = np.array(data["t"].T)
-		x, y_testing = np.meshgrid(x, y_testing)
-		Err_testing = []
+        def model_quad_OpInf(t, x):
+            """Define a vector field of a quadratic system."""
+            return A_OpInf @ x + H_OpInf @ np.kron(x, x) + B_OpInf
 
-		# testing of the learned model
-		for k in range(X_testing.shape[0]):
+        x = np.arange(0, 1, 1 / 250)
+        y_testing = np.array(data["t"].T)
+        x, y_testing = np.meshgrid(x, y_testing)
+        Err_testing = []
 
-			x0 = U[:, :r].T @ X_testing[k, :, 0] / scaling_fac
-			t_testing = np.arange(0, 501) * (t_true[1] - t_true[0])
+        # testing of the learned model
+        for k in range(X_testing.shape[0]):
+            x0 = U[:, :r].T @ X_testing[k, :, 0] / scaling_fac
+            t_testing = np.arange(0, 501) * (t_true[1] - t_true[0])
 
-			sol_OpInf = solve_ivp(
-				model_quad_OpInf, [t_testing[0], t_testing[-1]], x0, t_eval=t_testing
-			)
-			full_sol_OpInf = U[:, :r] @ sol_OpInf.y
+            sol_OpInf = solve_ivp(
+                model_quad_OpInf, [t_testing[0], t_testing[-1]], x0, t_eval=t_testing
+            )
+            full_sol_OpInf = U[:, :r] @ sol_OpInf.y
 
-			if (sol_OpInf.y).shape[-1] == len(t_testing):
-				fig, ax = plt.subplots(
-					1, 3, figsize=(16, 4), subplot_kw={"projection": "3d"}
-				)
-				# Plot the surface.
-				surf = ax[0].plot_surface(x, y_testing, X_testing[k].T, cmap=cm.coolwarm)
-				surf = ax[1].plot_surface(
-					x, y_testing, scaling_fac * full_sol_OpInf.T, cmap=cm.coolwarm
-				)
-				surf = ax[2].plot_surface(
-					x,
-					y_testing,
-					np.log10(abs(X_testing[k].T - scaling_fac * full_sol_OpInf.T)),
-					cmap=cm.coolwarm,
-				)
-				ax[0].set(
-					xlabel="$x$", ylabel="time", zlabel="$u(x,t)$", title="ground-truth"
-				)
-				ax[1].set(
-					xlabel="$x$",
-					ylabel="time",
-					zlabel="$\hat{u}(x,t)$",
-					title="learned model",
-				)
-				ax[2].set(
-					xlabel="$x$",
-					ylabel="time",
-					zlabel="error in log-scale",
-					title="absolute error",
-				)
+            if (sol_OpInf.y).shape[-1] == len(t_testing):
+                fig, ax = plt.subplots(1, 3, figsize=(16, 4), subplot_kw={"projection": "3d"})
+                # Plot the surface.
+                surf = ax[0].plot_surface(x, y_testing, X_testing[k].T, cmap=cm.coolwarm)
+                surf = ax[1].plot_surface(
+                    x, y_testing, scaling_fac * full_sol_OpInf.T, cmap=cm.coolwarm
+                )
+                surf = ax[2].plot_surface(
+                    x,
+                    y_testing,
+                    np.log10(abs(X_testing[k].T - scaling_fac * full_sol_OpInf.T)),
+                    cmap=cm.coolwarm,
+                )
+                ax[0].set(xlabel="$x$", ylabel="time", zlabel="$u(x,t)$", title="ground-truth")
+                ax[1].set(
+                    xlabel="$x$",
+                    ylabel="time",
+                    zlabel="$\hat{u}(x,t)$",
+                    title="learned model",
+                )
+                ax[2].set(
+                    xlabel="$x$",
+                    ylabel="time",
+                    zlabel="error in log-scale",
+                    title="absolute error",
+                )
 
-				ax[0].set_zlim([-2.5,2.5])
-				ax[1].set_zlim([-2.5,2.5])
+                ax[0].set_zlim([-2.5, 2.5])
+                ax[1].set_zlim([-2.5, 2.5])
 
-				for _ax in ax:
-					_ax.xaxis.labelpad = 10
-					_ax.yaxis.labelpad = 10
-					_ax.zaxis.labelpad = 10
+                for _ax in ax:
+                    _ax.xaxis.labelpad = 10
+                    _ax.yaxis.labelpad = 10
+                    _ax.zaxis.labelpad = 10
 
-				ax[2].tick_params(axis="z", direction="out", pad=10)
-				ax[2].zaxis.labelpad = 20
+                ax[2].tick_params(axis="z", direction="out", pad=10)
+                ax[2].zaxis.labelpad = 20
 
-				ax[2].set_zscale("linear")
+                ax[2].set_zscale("linear")
 
-				plt.tight_layout(pad=0.2, w_pad=0.1, h_pad=0.1)
+                plt.tight_layout(pad=0.2, w_pad=0.1, h_pad=0.1)
 
-				# plt.show()
-				fig.savefig(
-					Params.path + f"simulation_test_{k}_order_{r}.pdf",
-					bbox_inches="tight",
-					pad_inches=0,
-				)
-				fig.savefig(
-					Params.path + f"simulation_test_{k}_order_{r}.png",
-					dpi=300,
-					bbox_inches="tight",
-					pad_inches=0,
-				)
+                # plt.show()
+                fig.savefig(
+                    Params.path + f"simulation_test_{k}_order_{r}.pdf",
+                    bbox_inches="tight",
+                    pad_inches=0,
+                )
+                fig.savefig(
+                    Params.path + f"simulation_test_{k}_order_{r}.png",
+                    dpi=300,
+                    bbox_inches="tight",
+                    pad_inches=0,
+                )
 
-				err = (np.linalg.norm(scaling_fac * full_sol_OpInf - X_testing[k])) / (
-					np.linalg.norm(X_testing[k])
-				)
-				Err_testing.append(err)
+                err = (np.linalg.norm(scaling_fac * full_sol_OpInf - X_testing[k])) / (
+                    np.linalg.norm(X_testing[k])
+                )
+                Err_testing.append(err)
 
-			else:
-				Err_testing.append(np.NaN)
+            else:
+                Err_testing.append(np.NaN)
 
-		Errors = np.mean(Err_testing)
-		print(f'\n======== Reg H ==========')
-		print(reg_h)
-		print('\n')
-		print(Errors)
-		print(Err_testing)
-		savemat(
-			Params.path + f"simulation_error_order_{r}.mat",
-			{
-				"reg_h": reg_h,
-				"errors_test": Err_testing,
-				"errors": Errors,
-				"loss": loss_track,
-				"eigs": np.linalg.eig(A_OpInf)[0],
-				"reduced_orders": reduced_orders,
-				"sin_vals": S,
-			},
-		)
+        Errors = np.mean(Err_testing)
+        print("\n======== Reg H ==========")
+        print(reg_h)
+        print("\n")
+        print(Errors)
+        print(Err_testing)
+        savemat(
+            Params.path + f"simulation_error_order_{r}.mat",
+            {
+                "reg_h": reg_h,
+                "errors_test": Err_testing,
+                "errors": Errors,
+                "loss": loss_track,
+                "eigs": np.linalg.eig(A_OpInf)[0],
+                "reduced_orders": reduced_orders,
+                "sin_vals": S,
+            },
+        )
 
-		plt.close("all")
+        plt.close("all")

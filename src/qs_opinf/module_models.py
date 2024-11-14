@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+
 from qs_opinf.utils import kron
 
 
@@ -15,6 +16,7 @@ class ModelHypothesis(nn.Module):
         print("B_term:", self.B_term)
 
     def forward(self, x, t):
+        """Create a forward pass defined right-hand-side of quadratic systems."""
         x_A = x @ self.A.T
         x_H = kron(x, x) @ self.H.T
         if self.B_term:
@@ -45,6 +47,7 @@ class ModelHypothesisLocalStable(nn.Module):
 
     @property
     def A(self):
+        """Construct stable matrix A."""
         J = self._J - self._J.T
         R = self._R @ self._R.T
 
@@ -55,6 +58,7 @@ class ModelHypothesisLocalStable(nn.Module):
         return self._A
 
     def forward(self, x, t):
+        """Create a forward pass defined right-hand-side of quadratic systems."""
         x_A = x @ self.A.T
         x_H = kron(x, x) @ self.H.T
         if self.B_term:
@@ -81,13 +85,12 @@ class ModelHypothesisGlobalStable(nn.Module):
         self._R = torch.nn.Parameter(torch.randn(sys_order, sys_order) / FAC)
 
         self.B = torch.nn.Parameter(torch.zeros(sys_order, 1))
-        self._H_tensor = torch.nn.Parameter(
-            torch.zeros(sys_order, sys_order, sys_order) / FAC
-        )
+        self._H_tensor = torch.nn.Parameter(torch.zeros(sys_order, sys_order, sys_order) / FAC)
         print("B_term:", self.B_term)
 
     @property
     def A(self):
+        """Construct stable matrix A with Q being identity."""
         J = self._J - self._J.T
         R = self._R @ self._R.T
         _A = J - R
@@ -97,12 +100,14 @@ class ModelHypothesisGlobalStable(nn.Module):
 
     @property
     def H(self):
+        """Constuct energy preserving quadratic operator."""
         _H_tensor2 = self._H_tensor.permute(0, 2, 1)
         J_tensor = self._H_tensor - _H_tensor2
         self._H = J_tensor.permute(1, 0, 2).reshape(self.sys_order, self.sys_order**2)
         return self._H
 
     def forward(self, x, t):
+        """Create a forward pass defined right-hand-side of quadratic systems."""
         x_A = x @ self.A.T
         x_H = kron(x, x) @ self.H.T
         if self.B_term:
@@ -129,20 +134,21 @@ class SINDy_NoStable(nn.Module):
 
         self.B = torch.nn.Parameter(torch.zeros(sys_order, 1))
         self.m = torch.zeros(1, sys_order)
-        self._H_tensor = torch.nn.Parameter(
-            torch.zeros(sys_order, sys_order, sys_order) / fac
-        )
+        self._H_tensor = torch.nn.Parameter(torch.zeros(sys_order, sys_order, sys_order) / fac)
 
     @property
     def A(self):
+        """Constuct no-stability gauranteed matrix."""
         return self._J
 
     @property
     def H(self):
+        """Define matrix H without any specific property."""
         self._H = self._H_tensor.reshape(self.sys_order, self.sys_order**2)
         return self._H
 
     def forward(self, x, t):
+        """Create a forward pass defined right-hand-side of quadratic systems."""
         x_A = x @ self.A.T
         x_H = kron(x, x) @ self.H.T
         if self.B_term:
@@ -170,32 +176,30 @@ class SINDy_Stable_Trapping(nn.Module):
 
         self.B = torch.nn.Parameter(torch.zeros(sys_order, 1))
         self.m = torch.nn.Parameter(torch.zeros(1, sys_order))
-        self._H_tensor = torch.nn.Parameter(
-            torch.zeros(sys_order, sys_order, sys_order) / fac
-        )
+        self._H_tensor = torch.nn.Parameter(torch.zeros(sys_order, sys_order, sys_order) / fac)
 
     @property
     def A(self):
+        """Construct stable matrix A with Q being identity."""
         J = self._J - self._J.T
-        R = self._R @ self._R.T + 0.00 * torch.eye(self.sys_order)
+        R = self._R @ self._R.T
 
-        Q = self._Q @ self._Q.T
         _A = J - R
 
         self._A = _A
-        # self._A = self._J + self._J
+
         return self._A
 
     @property
     def H(self):
+        """Constuct energy preserving quadratic operator."""
         _H_tensor2 = self._H_tensor.permute(0, 2, 1)
         J_tensor = self._H_tensor - _H_tensor2
         self._H = J_tensor.permute(1, 0, 2).reshape(self.sys_order, self.sys_order**2)
-        Q = self._Q @ self._Q.T
-        # self._H = self._H_tensor.reshape(self.sys_order,self.sys_order**2)
         return self._H
 
     def forward(self, x, t):
+        """Create a forward pass defined right-hand-side of quadratic systems wrt to trapping region."""
         x = x - self.m
         x_A = x @ self.A.T
         x_H = kron(x, x) @ self.H.T
@@ -223,20 +227,21 @@ class ModelHypothesisNoStable_MHD(nn.Module):
 
         self.B = torch.nn.Parameter(torch.zeros(sys_order, 1))
         self.m = torch.zeros(1, sys_order)
-        self._H_tensor = torch.nn.Parameter(
-            torch.zeros(sys_order, sys_order, sys_order) / fac
-        )
+        self._H_tensor = torch.nn.Parameter(torch.zeros(sys_order, sys_order, sys_order) / fac)
 
     @property
     def A(self):
+        """Constuct no-stability gauranteed matrix."""
         return self._J
 
     @property
     def H(self):
+        """Define matrix H without any specific property."""
         self._H = self._H_tensor.reshape(self.sys_order, self.sys_order**2)
         return self._H
 
     def forward(self, x, t):
+        """Create a forward pass defined right-hand-side of quadratic systems."""
         x_A = x @ self.A.T
         x_H = kron(x, x) @ self.H.T
         if self.B_term:
@@ -265,30 +270,31 @@ class ModelHypothesisGlobalStable_MHD(nn.Module):
         # self.B = torch.nn.Parameter(torch.zeros(sys_order,1))
         self.B = torch.zeros(sys_order, 1)
         self.m = torch.nn.Parameter(torch.zeros(1, sys_order))
-        self._H_tensor = torch.nn.Parameter(
-            torch.zeros(sys_order, sys_order, sys_order) / fac
-        )
+        self._H_tensor = torch.nn.Parameter(torch.zeros(sys_order, sys_order, sys_order) / fac)
 
     @property
     def A(self):
+        """Construct skew-symmetric matrix A to have energy-preserving properties."""
         J = self._J - self._J.T
 
         _A = J
 
         self._A = _A
-        # self._A = self._J + self._J
         return self._A
 
     @property
     def H(self):
+        """Constuct energy preserving quadratic operator."""
         _H_tensor2 = self._H_tensor.permute(0, 2, 1)
         J_tensor = self._H_tensor - _H_tensor2
         self._H = J_tensor.permute(1, 0, 2).reshape(self.sys_order, self.sys_order**2)
-        Q = self._Q @ self._Q.T
-        # self._H = self._H_tensor.reshape(self.sys_order,self.sys_order**2)
         return self._H
 
     def forward(self, x, t):
+        """
+        Create a forward pass defined right-hand-side of quadratic systems
+        wrt trapping region.
+        """
         x = x - self.m
         x_A = x @ self.A.T
         x_H = kron(x, x) @ self.H.T

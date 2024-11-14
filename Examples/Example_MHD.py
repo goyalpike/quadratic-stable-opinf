@@ -27,8 +27,9 @@ class parameters:
     bs: int = 1
     num_epochs: int = 2000
     normalizing_coeffs: bool = False
-    path: str = None
-    model_hypothesis: str = None
+    path: str | None = None
+    model_hypothesis: str | None = None
+    regularization_H: float = 0.0
 
 
 Params = parameters()
@@ -70,6 +71,7 @@ if not os.path.exists(Params.path):
 
 # The following def is taken from [https://github.com/dynamicslab/pysindy/blob/master/examples/8_trapping_sindy_paper_examples.ipynb]
 def make_lissajou(r, x_train, x_test, x_train_pred, x_test_pred, filename, colors):
+    """Plot training and predicted data in a grid."""
     fig = plt.figure(figsize=(8, 8))
     spec = gridspec.GridSpec(ncols=r, nrows=r, figure=fig, hspace=0.0, wspace=0.0)
     XB = [r"$v_1$", r"$v_2$", r"$v_3$", r"$b_1$", r"$b_2$", r"$b_3$"]
@@ -97,9 +99,7 @@ def make_lissajou(r, x_train, x_test, x_train_pred, x_test_pred, filename, color
         for j in range(i):
             plt.subplot(spec[i, j])
             plt.plot(x_test[:, j], x_test[:, i], color=colors[1], linewidth=1)
-            plt.plot(
-                x_test_pred[:, j], x_test_pred[:, i], "--", color=colors[2], linewidth=1
-            )
+            plt.plot(x_test_pred[:, j], x_test_pred[:, i], "--", color=colors[2], linewidth=1)
             ax = plt.gca()
             ax.set_xticks([])
             ax.set_yticks([])
@@ -113,8 +113,10 @@ def make_lissajou(r, x_train, x_test, x_train_pred, x_test_pred, filename, color
 
 
 reprod_seed(75)
-# Carbone and Veltri triadic MHD model
+
+
 def mhd(t, x, nu=0.0, mu=0.0, sigma=0.0):
+    """Define vector field of Carbone and Veltri triadic MHD model."""
     return [
         -2 * nu * x[0] + 4.0 * (x[1] * x[2] - x[4] * x[5]),
         -5 * nu * x[1] - 7.0 * (x[0] * x[2] - x[3] * x[5]),
@@ -136,9 +138,7 @@ for _ in range(
     x0_test = np.random.rand(6) - 0.5
 
 # generating initial conditions
-sol = solve_ivp(
-    fun=lambda t, x: mhd(t, x), t_span=[t_train[0], t_train[-1]], y0=x0, t_eval=t_train
-)
+sol = solve_ivp(fun=lambda t, x: mhd(t, x), t_span=[t_train[0], t_train[-1]], y0=x0, t_eval=t_train)
 
 x_train = sol.y.T
 
@@ -171,7 +171,6 @@ for i in range(1, X.shape[0]):
 
 r = 6
 temp_Xr = temp_X  # reduced data
-temp_Xr.shape
 if Params.normalizing_coeffs:
     scaling_fac = np.max(np.abs(temp_Xr))
 else:
@@ -207,7 +206,7 @@ dataloaders = {"train": train_dl}
 ######################################################################
 # Defining model, optimizer, and training
 Params.regularization_H = 1e-12  # regularizer for H
-model = model_hypothesis_function(sys_order=r, B_term=True).double()
+model = model_hypothesis_function(sys_order=r, B_term=True).double()  # type: ignore[attr-defined]
 
 opt_func = torch.optim.Adam(model.parameters())
 scheduler = torch.optim.lr_scheduler.CyclicLR(
@@ -256,9 +255,7 @@ for _ in range(4):
         max_lr=5e-3,
     )
 
-    model, loss_track = training(
-        model, dataloaders, opt_func, Params, scheduler=scheduler
-    )
+    model, loss_track = training(model, dataloaders, opt_func, Params, scheduler=scheduler)
 
 
 ################################################################################
@@ -283,12 +280,11 @@ m = (
 
 
 def model_quad_OpInf(t, x):
+    """Define vector field of a quadratic system."""
     return A_OpInf @ (x - m) + H_OpInf @ np.kron(x - m, x - m) + B_OpInf
 
 
-t_testing = np.linspace(
-    0, 50, 5000
-)  # training time-span which is differntial than training
+t_testing = np.linspace(0, 50, 5000)  # training time-span which is differntial than training
 # re-defining the plot-settings (somehow it works better to re-load again!)
 
 
@@ -303,8 +299,7 @@ else:
 
 INITS_CONDS = [x0_test]  # test initial condition
 
-for k, x0 in enumerate(INITS_CONDS):
-
+for _, x0 in enumerate(INITS_CONDS):
     # ground-truth model
     sol = solve_ivp(
         fun=lambda t, x: mhd(t, x),
@@ -314,14 +309,10 @@ for k, x0 in enumerate(INITS_CONDS):
     )
 
     # learned model
-    sol_OpInf = solve_ivp(
-        model_quad_OpInf, [t_testing[0], t_testing[-1]], x0, t_eval=t_testing
-    )
+    sol_OpInf = solve_ivp(model_quad_OpInf, [t_testing[0], t_testing[-1]], x0, t_eval=t_testing)
     full_sol_OpInf = sol_OpInf.y
 
-sol_train = solve_ivp(
-    model_quad_OpInf, [t_testing[0], t_testing[-1]], x0_train, t_eval=t_testing
-)
+sol_train = solve_ivp(model_quad_OpInf, [t_testing[0], t_testing[-1]], x0_train, t_eval=t_testing)
 full_sol_train = sol_train.y
 
 # Making ploting
@@ -335,5 +326,5 @@ fig = make_lissajou(
     colors=[colors[0], "r", COLORS_],
 )
 
-fig.savefig(Params.path + f"simulation_test.pdf", bbox_inches="tight")
-fig.savefig(Params.path + f"simulation_test.png", dpi=300, bbox_inches="tight")
+fig.savefig(Params.path + "simulation_test.pdf", bbox_inches="tight")
+fig.savefig(Params.path + "simulation_test.png", dpi=300, bbox_inches="tight")

@@ -14,9 +14,9 @@ from scipy.io import loadmat, savemat
 from scipy.linalg import block_diag
 
 from qs_opinf import module_models
+from qs_opinf.constants import data_path, results_path
 from qs_opinf.module_training import training
 from qs_opinf.utils import ddt_uniform, reprod_seed
-from qs_opinf.constants import data_path, results_path
 
 font = {"family": "normal", "weight": "bold", "size": 20}
 
@@ -32,7 +32,6 @@ plt.rcParams["font.weight"] = "bold"
 plt.rcParams["axes.labelweight"] = "bold"
 
 
-
 reprod_seed(42)
 
 
@@ -41,8 +40,10 @@ class parameters:
     bs: int = 8
     num_epochs: int = 2000
     normalizing_coeffs: bool = False
-    path: str = None
-    model_hypothesis: str = None
+    path: str | None = None
+    model_hypothesis: str | None = None
+    regularization_H: float = 0.0
+    sys_order: int | None = None
 
 
 Params = parameters()
@@ -62,7 +63,11 @@ args = parser.parse_args()
 Params.num_epochs = args.epochs
 
 path_funcs = {
-    "no_hypos": (str(results_path / "Chafee/NoStability/"), module_models.ModelHypothesis, True),
+    "no_hypos": (
+        str(results_path / "Chafee/NoStability/"),
+        module_models.ModelHypothesis,
+        True,
+    ),
     "localstability": (
         str(results_path / "Chafee/LocalStability/"),
         module_models.ModelHypothesisLocalStable,
@@ -87,7 +92,6 @@ if not os.path.exists(Params.path):
 data = loadmat(data_path / "Chafee_data_inits_conditions.mat")
 
 X_all = data["X_data"].transpose(0, 2, 1)
-X_all.shape
 x_shift = 1 * np.ones((1, 1000, 1))
 X_all = X_all - x_shift
 
@@ -99,12 +103,8 @@ train_idxs = list(set(idxs) - set(testing_idxs))
 _X_testing = X_all[testing_idxs]
 _X_training = X_all[train_idxs]
 
-X_testing = np.concatenate(
-    [_X_testing, 0.5 * (0 * _X_testing + _X_testing**2)], axis=1
-)
-X_training = np.concatenate(
-    [_X_training, 0.5 * (0 * _X_training + _X_training**2)], axis=1
-)
+X_testing = np.concatenate([_X_testing, 0.5 * (0 * _X_testing + _X_testing**2)], axis=1)
+X_training = np.concatenate([_X_training, 0.5 * (0 * _X_training + _X_training**2)], axis=1)
 
 t = data["t"].T
 print(f"Training trajectories: {X_training.shape}")
@@ -167,7 +167,7 @@ for tol in TOLS:
         r1 += 1
 
     print(f"Domainant model for first: {r1}")
-    print(f"Energy captured by the snapshots: {100*sum(S1[:r1])/sum(S1)}%")
+    print(f"Energy captured by the snapshots: {100 * sum(S1[:r1]) / sum(S1)}%")
 
     r2 = 1
     while r2 < len(S2) + 1:
@@ -177,7 +177,7 @@ for tol in TOLS:
 
     Params.sys_order = r2
     print(f"Domainant model for second: {r2}")
-    print(f"Energy captured by the snapshots: {100*sum(S2[:r2])/sum(S2)}%")
+    print(f"Energy captured by the snapshots: {100 * sum(S2[:r2]) / sum(S2)}%")
 
     Params.sys_order = r1 + r2
     r = Params.sys_order
@@ -219,15 +219,12 @@ for tol in TOLS:
             torch.tensor(dXr).permute((0, 2, 1)).double(),
         )
     )
-    train_dl = torch.utils.data.DataLoader(
-        train_dset, batch_size=Params.bs, shuffle=True
-    )
+    train_dl = torch.utils.data.DataLoader(train_dset, batch_size=Params.bs, shuffle=True)
     dataloaders = {"train": train_dl}
 
     Params.regularization_H = 1e-8
 
-
-    model = model_hypothesis_function(sys_order=r, B_term=B_term).double()
+    model = model_hypothesis_function(sys_order=r, B_term=B_term).double()  # type: ignore[attr-defined]
 
     opt_func = torch.optim.Adam(model.parameters())
     scheduler = torch.optim.lr_scheduler.CyclicLR(
@@ -239,9 +236,7 @@ for tol in TOLS:
         max_lr=5e-3,
     )
 
-    model, loss_track = training(
-        model, dataloaders, opt_func, Params, scheduler=scheduler
-    )
+    model, loss_track = training(model, dataloaders, opt_func, Params, scheduler=scheduler)
 
     ## Learned model
     A_OpInf = model.A.detach().numpy()
@@ -255,6 +250,7 @@ for tol in TOLS:
     )
 
     def model_quad_OpInf(t, x):
+        """Define a vector field of a quadratic system."""
         return A_OpInf @ x + H_OpInf @ np.kron(x, x) + B_OpInf
 
     # testing learned model
@@ -272,19 +268,14 @@ for tol in TOLS:
     Err_testing = []
 
     for k in range(X_testing.shape[0]):
-
         x0 = Projection_V.T @ X_testing[k, :, 0] / scaling_fac
         t_testing = np.arange(0, len(t_true)) * (t_true[1] - t_true[0])
 
-        sol_OpInf = solve_ivp(
-            model_quad_OpInf, [t_testing[0], t_testing[-1]], x0, t_eval=t_testing
-        )
+        sol_OpInf = solve_ivp(model_quad_OpInf, [t_testing[0], t_testing[-1]], x0, t_eval=t_testing)
         full_sol_OpInf = Projection_V @ sol_OpInf.y
 
         if (sol_OpInf.y).shape[-1] == len(t_testing):
-            fig, ax = plt.subplots(
-                1, 3, figsize=(16, 4), subplot_kw={"projection": "3d"}
-            )
+            fig, ax = plt.subplots(1, 3, figsize=(16, 4), subplot_kw={"projection": "3d"})
             # Plot the surface.
             surf = ax[0].plot_surface(
                 x,
@@ -301,14 +292,10 @@ for tol in TOLS:
             surf = ax[2].plot_surface(
                 x,
                 y_testing,
-                np.log10(
-                    abs(X_testing[k][:1000].T - scaling_fac * full_sol_OpInf[:1000].T)
-                ),
+                np.log10(abs(X_testing[k][:1000].T - scaling_fac * full_sol_OpInf[:1000].T)),
                 **PROPERTY,
             )
-            ax[0].set(
-                xlabel="$x$", ylabel="time", zlabel="$u(x,t)$", title="ground-truth"
-            )
+            ax[0].set(xlabel="$x$", ylabel="time", zlabel="$u(x,t)$", title="ground-truth")
             ax[1].set(
                 xlabel="$x$",
                 ylabel="time",

@@ -17,8 +17,63 @@ scipy = "^1.14.1"
 jupyter = "^1.1.1"
 matplotlib = "3.5.3"
 numpy="1.23.5"
+ruff = "^0.7.3"
+pre-commit = "^4.0.1"
 
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+# Set the maximum line length to 100.
+line-length = 100
+exclude = ["**/*.ipynb"]  # exclude all .ipynb files
+
+
+
+
+[tool.ruff.lint]
+# Add the `line-too-long` rule to the enforced rule set. By default, Ruff omits rules that
+# overlap with the use of a formatter, like Black, but we can override this behavior by
+# explicitly adding the rule.
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # isort,
+    "I",
+    # pydocstyle
+    "D",
+]
+exclude = [
+    "test_*.py",   # Exclude files that start with test_
+    "tests/*.py",  # Exclude files in a tests/ directory
+    "**/__init__.py" # Exclude init files
+]
+ignore = [
+    "E501", # line too long.
+    "D205", # blank line after summary
+    "D100", "D101",
+    "E741", # Allow variables e.g. I
+    "B023",
+]
+extend-fixable = [
+    "F401", # unused import
+]
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+preview = true
+
+[tool.mypy]
+disallow_incomplete_defs = true

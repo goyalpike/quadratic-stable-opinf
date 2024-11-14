@@ -26,8 +26,9 @@ class parameters:
     bs: int = 1
     num_epochs: int = 2000
     normalizing_coeffs: bool = False
-    path: str = None
-    model_hypothesis: str = None
+    path: str | None = None
+    model_hypothesis: str | None = None
+    regularization_H: float = 0.0
 
 
 Params = parameters()
@@ -69,6 +70,7 @@ if not os.path.exists(Params.path):
 
 # Defining model
 def lorenz_system(t, Y, sigma, rho, beta):
+    """Define Lorenz vector field."""
     x, y, z = Y
     dxdt = sigma * (y - x)
     dydt = x * (rho - z) - y
@@ -77,7 +79,7 @@ def lorenz_system(t, Y, sigma, rho, beta):
 
 
 def plotting_training_data():
-    # plotting the data
+    """Plot training data."""
     fig = plt.figure()
     ax = fig.add_subplot(111, projection="3d")
     ax.plot(sol.y[0][::2] / 8, sol.y[1][::2] / 8, (sol.y[2][::2] - 25) / 8)
@@ -86,8 +88,8 @@ def plotting_training_data():
     ax.set_zlabel("Z")
     plt.tight_layout()
 
-    fig.savefig(Params.path + f"Noisy_measurement.pdf", bbox_inches="tight")
-    fig.savefig(Params.path + f"Noisy_measurement.png", dpi=300, bbox_inches="tight")
+    fig.savefig(Params.path + "Noisy_measurement.pdf", bbox_inches="tight")
+    fig.savefig(Params.path + "Noisy_measurement.png", dpi=300, bbox_inches="tight")
 
 
 sigma, rho, beta = 10, 28, 8 / 3  # model parameters
@@ -104,9 +106,7 @@ sol = solve_ivp(
     t_eval=t_train,
 )
 
-sol.y = sol.y + 10e-2 * np.random.randn(
-    *sol.y.shape
-)  # adding artificial Gaussian noise
+sol.y = sol.y + 10e-2 * np.random.randn(*sol.y.shape)  # adding artificial Gaussian noise
 plotting_training_data()
 
 # Normalzing data
@@ -146,7 +146,7 @@ if Params.normalizing_coeffs:
     scaling_fac = np.max(np.abs(temp_Xr))
 else:
     scaling_fac = 1.0
-print(f"scaling fac is: ", scaling_fac)
+print("scaling fac is: ", scaling_fac)
 
 temp_Xr = temp_Xr / scaling_fac
 
@@ -178,7 +178,7 @@ dataloaders = {"train": train_dl}
 ##################################################################################
 # Defining mode, optimizer, and inference
 Params.regularization_H = 1e-6  # regularizer for H
-model = model_hypothesis_function(sys_order=r, B_term=True).double()
+model = model_hypothesis_function(sys_order=r, B_term=True).double()  # type: ignore[attr-defined]
 opt_func = torch.optim.Adam(model.parameters())
 scheduler = torch.optim.lr_scheduler.CyclicLR(
     opt_func,
@@ -227,9 +227,7 @@ for _ in range(4):
         max_lr=5e-3,
     )
 
-    model, loss_track = training(
-        model, dataloaders, opt_func, Params, scheduler=scheduler
-    )
+    model, loss_track = training(model, dataloaders, opt_func, Params, scheduler=scheduler)
 
     ## Learned model
     A_OpInf = model.A.detach().numpy()
@@ -264,8 +262,10 @@ m = (
     )
 )
 
+
 # Quad-model
 def model_quad_OpInf(t, x):
+    """Define vector field of a quadratic system."""
     return A_OpInf @ (x - m) + H_OpInf @ np.kron(x - m, x - m) + B_OpInf
 
 
@@ -280,7 +280,7 @@ else:
     TITLE = ["ground-truth", r"\texttt{RK4-SINDy}"]
 
 # Test initial conditions
-INITS_CONDS = [[10, 10, -10], [100, -100, 100], [-500, 500, 500]]
+INITS_CONDS = [[10.0, 10.0, -10.0], [100.0, -100.0, 100.0], [-500.0, 500.0, 500.0]]
 
 for k, x0 in enumerate(INITS_CONDS):
     # we remark that the learning model is for shifting data, whereas original model is without. Therefore, learned model will take shifted data as initial condition.
@@ -300,9 +300,7 @@ for k, x0 in enumerate(INITS_CONDS):
     )
 
     # Solving inferred model
-    sol_OpInf = solve_ivp(
-        model_quad_OpInf, [t_testing[0], t_testing[-1]], x0, t_eval=t_testing
-    )
+    sol_OpInf = solve_ivp(model_quad_OpInf, [t_testing[0], t_testing[-1]], x0, t_eval=t_testing)
 
     full_sol_OpInf = sol_OpInf.y
 
@@ -317,9 +315,7 @@ for k, x0 in enumerate(INITS_CONDS):
     plt.tight_layout()
 
     fig.savefig(Params.path + f"simulation_test_orig{k}.pdf", bbox_inches="tight")
-    fig.savefig(
-        Params.path + f"simulation_test_orig{k}.png", dpi=300, bbox_inches="tight"
-    )
+    fig.savefig(Params.path + f"simulation_test_orig{k}.png", dpi=300, bbox_inches="tight")
 
     fig = plt.figure(figsize=(4, 4))
     ax = fig.add_subplot(111, projection="3d")
@@ -337,6 +333,4 @@ for k, x0 in enumerate(INITS_CONDS):
     plt.tight_layout()
 
     fig.savefig(Params.path + f"simulation_test_learnt{k}.pdf", bbox_inches="tight")
-    fig.savefig(
-        Params.path + f"simulation_test_learnt{k}.png", dpi=300, bbox_inches="tight"
-    )
+    fig.savefig(Params.path + f"simulation_test_learnt{k}.png", dpi=300, bbox_inches="tight")
