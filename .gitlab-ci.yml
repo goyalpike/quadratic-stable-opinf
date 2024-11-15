@@ -13,7 +13,7 @@ before_script:
   - poetry run pre-commit install-hooks
 
 
-lint:
+code_check:
   stage: pre-commit
   image: gitlab.mpi-magdeburg.mpg.de/ci-images/python-images/3.11:jammy
   script:

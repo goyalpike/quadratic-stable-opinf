@@ -106,9 +106,7 @@ sol = solve_ivp(
     t_eval=t_train,
 )
 
-sol.y = sol.y + 10e-2 * np.random.randn(
-    *sol.y.shape
-)  # adding artificial Gaussian noise
+sol.y = sol.y + 10e-2 * np.random.randn(*sol.y.shape)  # adding artificial Gaussian noise
 plotting_training_data()
 
 # Normalzing data
@@ -229,9 +227,7 @@ for _ in range(4):
         max_lr=5e-3,
     )
 
-    model, loss_track = training(
-        model, dataloaders, opt_func, Params, scheduler=scheduler
-    )
+    model, loss_track = training(model, dataloaders, opt_func, Params, scheduler=scheduler)
 
     ## Learned model
     A_OpInf = model.A.detach().numpy()
@@ -304,9 +300,7 @@ for k, x0 in enumerate(INITS_CONDS):
     )
 
     # Solving inferred model
-    sol_OpInf = solve_ivp(
-        model_quad_OpInf, [t_testing[0], t_testing[-1]], x0, t_eval=t_testing
-    )
+    sol_OpInf = solve_ivp(model_quad_OpInf, [t_testing[0], t_testing[-1]], x0, t_eval=t_testing)
 
     full_sol_OpInf = sol_OpInf.y
 
@@ -321,9 +315,7 @@ for k, x0 in enumerate(INITS_CONDS):
     plt.tight_layout()
 
     fig.savefig(Params.path + f"simulation_test_orig{k}.pdf", bbox_inches="tight")
-    fig.savefig(
-        Params.path + f"simulation_test_orig{k}.png", dpi=300, bbox_inches="tight"
-    )
+    fig.savefig(Params.path + f"simulation_test_orig{k}.png", dpi=300, bbox_inches="tight")
 
     fig = plt.figure(figsize=(4, 4))
     ax = fig.add_subplot(111, projection="3d")
@@ -341,6 +333,4 @@ for k, x0 in enumerate(INITS_CONDS):
     plt.tight_layout()
 
     fig.savefig(Params.path + f"simulation_test_learnt{k}.pdf", bbox_inches="tight")
-    fig.savefig(
-        Params.path + f"simulation_test_learnt{k}.png", dpi=300, bbox_inches="tight"
-    )
+    fig.savefig(Params.path + f"simulation_test_learnt{k}.png", dpi=300, bbox_inches="tight")

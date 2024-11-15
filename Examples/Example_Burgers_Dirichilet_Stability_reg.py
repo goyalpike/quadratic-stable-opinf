@@ -193,9 +193,7 @@ for r in reduced_orders:
             torch.tensor(dXr).permute((0, 2, 1)).double(),
         )
     )
-    train_dl = torch.utils.data.DataLoader(
-        train_dset, batch_size=Params.bs, shuffle=True
-    )
+    train_dl = torch.utils.data.DataLoader(train_dset, batch_size=Params.bs, shuffle=True)
     dataloaders = {"train": train_dl}
     Reg_H = np.logspace(-10, 1, 12)
     PATH = Params.path
@@ -220,9 +218,7 @@ for r in reduced_orders:
             max_lr=5e-3,
         )
 
-        model, loss_track = training(
-            model, dataloaders, opt_func, Params, scheduler=scheduler
-        )
+        model, loss_track = training(model, dataloaders, opt_func, Params, scheduler=scheduler)
 
         ## Learned model
         A_OpInf = model.A.detach().numpy()
@@ -255,13 +251,9 @@ for r in reduced_orders:
             full_sol_OpInf = U[:, :r] @ sol_OpInf.y
 
             if (sol_OpInf.y).shape[-1] == len(t_testing):
-                fig, ax = plt.subplots(
-                    1, 3, figsize=(16, 4), subplot_kw={"projection": "3d"}
-                )
+                fig, ax = plt.subplots(1, 3, figsize=(16, 4), subplot_kw={"projection": "3d"})
                 # Plot the surface.
-                surf = ax[0].plot_surface(
-                    x, y_testing, X_testing[k].T, cmap=cm.coolwarm
-                )
+                surf = ax[0].plot_surface(x, y_testing, X_testing[k].T, cmap=cm.coolwarm)
                 surf = ax[1].plot_surface(
                     x, y_testing, scaling_fac * full_sol_OpInf.T, cmap=cm.coolwarm
                 )
@@ -271,9 +263,7 @@ for r in reduced_orders:
                     np.log10(abs(X_testing[k].T - scaling_fac * full_sol_OpInf.T)),
                     cmap=cm.coolwarm,
                 )
-                ax[0].set(
-                    xlabel="$x$", ylabel="time", zlabel="$u(x,t)$", title="ground-truth"
-                )
+                ax[0].set(xlabel="$x$", ylabel="time", zlabel="$u(x,t)$", title="ground-truth")
                 ax[1].set(
                     xlabel="$x$",
                     ylabel="time",

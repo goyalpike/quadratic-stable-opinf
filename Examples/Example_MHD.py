@@ -99,9 +99,7 @@ def make_lissajou(r, x_train, x_test, x_train_pred, x_test_pred, filename, color
         for j in range(i):
             plt.subplot(spec[i, j])
             plt.plot(x_test[:, j], x_test[:, i], color=colors[1], linewidth=1)
-            plt.plot(
-                x_test_pred[:, j], x_test_pred[:, i], "--", color=colors[2], linewidth=1
-            )
+            plt.plot(x_test_pred[:, j], x_test_pred[:, i], "--", color=colors[2], linewidth=1)
             ax = plt.gca()
             ax.set_xticks([])
             ax.set_yticks([])
@@ -140,9 +138,7 @@ for _ in range(
     x0_test = np.random.rand(6) - 0.5
 
 # generating initial conditions
-sol = solve_ivp(
-    fun=lambda t, x: mhd(t, x), t_span=[t_train[0], t_train[-1]], y0=x0, t_eval=t_train
-)
+sol = solve_ivp(fun=lambda t, x: mhd(t, x), t_span=[t_train[0], t_train[-1]], y0=x0, t_eval=t_train)
 
 x_train = sol.y.T
 
@@ -259,9 +255,7 @@ for _ in range(4):
         max_lr=5e-3,
     )
 
-    model, loss_track = training(
-        model, dataloaders, opt_func, Params, scheduler=scheduler
-    )
+    model, loss_track = training(model, dataloaders, opt_func, Params, scheduler=scheduler)
 
 
 ################################################################################
@@ -290,9 +284,7 @@ def model_quad_OpInf(t, x):
     return A_OpInf @ (x - m) + H_OpInf @ np.kron(x - m, x - m) + B_OpInf
 
 
-t_testing = np.linspace(
-    0, 50, 5000
-)  # training time-span which is differntial than training
+t_testing = np.linspace(0, 50, 5000)  # training time-span which is differntial than training
 # re-defining the plot-settings (somehow it works better to re-load again!)
 
 
@@ -317,14 +309,10 @@ for _, x0 in enumerate(INITS_CONDS):
     )
 
     # learned model
-    sol_OpInf = solve_ivp(
-        model_quad_OpInf, [t_testing[0], t_testing[-1]], x0, t_eval=t_testing
-    )
+    sol_OpInf = solve_ivp(model_quad_OpInf, [t_testing[0], t_testing[-1]], x0, t_eval=t_testing)
     full_sol_OpInf = sol_OpInf.y
 
-sol_train = solve_ivp(
-    model_quad_OpInf, [t_testing[0], t_testing[-1]], x0_train, t_eval=t_testing
-)
+sol_train = solve_ivp(model_quad_OpInf, [t_testing[0], t_testing[-1]], x0_train, t_eval=t_testing)
 full_sol_train = sol_train.y
 
 # Making ploting

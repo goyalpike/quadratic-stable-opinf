@@ -104,9 +104,7 @@ _X_testing = X_all[testing_idxs]
 _X_training = X_all[train_idxs]
 
 X_testing = np.concatenate([_X_testing, 0.5 * (0 * _X_testing + _X_testing**2)], axis=1)
-X_training = np.concatenate(
-    [_X_training, 0.5 * (0 * _X_training + _X_training**2)], axis=1
-)
+X_training = np.concatenate([_X_training, 0.5 * (0 * _X_training + _X_training**2)], axis=1)
 
 t = data["t"].T
 print(f"Training trajectories: {X_training.shape}")
@@ -221,9 +219,7 @@ for tol in TOLS:
             torch.tensor(dXr).permute((0, 2, 1)).double(),
         )
     )
-    train_dl = torch.utils.data.DataLoader(
-        train_dset, batch_size=Params.bs, shuffle=True
-    )
+    train_dl = torch.utils.data.DataLoader(train_dset, batch_size=Params.bs, shuffle=True)
     dataloaders = {"train": train_dl}
 
     Params.regularization_H = 1e-8
@@ -240,9 +236,7 @@ for tol in TOLS:
         max_lr=5e-3,
     )
 
-    model, loss_track = training(
-        model, dataloaders, opt_func, Params, scheduler=scheduler
-    )
+    model, loss_track = training(model, dataloaders, opt_func, Params, scheduler=scheduler)
 
     ## Learned model
     A_OpInf = model.A.detach().numpy()
@@ -277,15 +271,11 @@ for tol in TOLS:
         x0 = Projection_V.T @ X_testing[k, :, 0] / scaling_fac
         t_testing = np.arange(0, len(t_true)) * (t_true[1] - t_true[0])
 
-        sol_OpInf = solve_ivp(
-            model_quad_OpInf, [t_testing[0], t_testing[-1]], x0, t_eval=t_testing
-        )
+        sol_OpInf = solve_ivp(model_quad_OpInf, [t_testing[0], t_testing[-1]], x0, t_eval=t_testing)
         full_sol_OpInf = Projection_V @ sol_OpInf.y
 
         if (sol_OpInf.y).shape[-1] == len(t_testing):
-            fig, ax = plt.subplots(
-                1, 3, figsize=(16, 4), subplot_kw={"projection": "3d"}
-            )
+            fig, ax = plt.subplots(1, 3, figsize=(16, 4), subplot_kw={"projection": "3d"})
             # Plot the surface.
             surf = ax[0].plot_surface(
                 x,
@@ -302,14 +292,10 @@ for tol in TOLS:
             surf = ax[2].plot_surface(
                 x,
                 y_testing,
-                np.log10(
-                    abs(X_testing[k][:1000].T - scaling_fac * full_sol_OpInf[:1000].T)
-                ),
+                np.log10(abs(X_testing[k][:1000].T - scaling_fac * full_sol_OpInf[:1000].T)),
                 **PROPERTY,
             )
-            ax[0].set(
-                xlabel="$x$", ylabel="time", zlabel="$u(x,t)$", title="ground-truth"
-            )
+            ax[0].set(xlabel="$x$", ylabel="time", zlabel="$u(x,t)$", title="ground-truth")
             ax[1].set(
                 xlabel="$x$",
                 ylabel="time",
