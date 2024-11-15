@@ -1,0 +1,20 @@
+stages:
+  - pre-commit
+
+cache:
+  paths:
+    - .pip-cache/
+    - .pre-commit-cache/
+
+before_script:
+  - apt-get update -y && apt-get install -y python3-pip
+  - pip install poetry==1.8.4
+  - poetry install --no-root
+  - poetry run pre-commit install-hooks
+
+
+lint:
+  stage: pre-commit
+  image: gitlab.mpi-magdeburg.mpg.de/ci-images/python-images/3.11:jammy
+  script:
+    - poetry run pre-commit run --all-files
