@@ -18,3 +18,6 @@ code_check:
   image: gitlab.mpi-magdeburg.mpg.de/ci-images/python-images/3.11:jammy
   script:
     - poetry run pre-commit run --all-files
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" # Trigger on Merge Request
+    - if: $CI_COMMIT_BRANCH == "main"                 # Trigger on Push to main
