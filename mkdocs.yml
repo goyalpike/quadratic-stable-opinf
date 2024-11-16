@@ -1,0 +1,70 @@
+site_name: Learning Quadratic Systems with Quadratic Lyapunov Functions
+site_url: https://goyalpike.github.io/qs-opinf/
+
+# Repository
+repo_name: goyalpike/qs-opinf/
+repo_url: https://github.com/goyalpike/qs-opinf/
+edit_uri: ""
+
+theme:
+  name: material
+  font:
+    text: Philosopher  # Change to any google font https://fonts.google.com/
+  palette:
+    # Palette toggle for light mode (https://squidfunk.github.io/mkdocs-material/setup/changing-the-colors/#system-preference)
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:  # https://squidfunk.github.io/mkdocs-material/setup/setting-up-navigation/
+    - navigation.instant
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.expand
+    - navigation.sections
+    - content.tabs.link
+    - search.suggest
+    - search.highlight
+
+copyright: Copyright &copy; 2024 Pawan Goyal
+
+markdown_extensions:
+  - admonition  # Used to enable additional markdown features such note, warning, error
+  - pymdownx.highlight  # Used to do syntex highlight for code
+  - pymdownx.superfences
+
+plugins:
+  - search
+  - social
+  - mkdocs-jupyter:
+      execute: False
+  - autorefs
+  - mkdocs-autoapi
+  - mkdocstrings:
+      handlers:
+        options:
+          show_submodules: true
+          show_source: true
+
+nav:
+  - Home: index.md
+  - Demo examples: Examples/*
+  # - API Documentation: code_documentation.md
+
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://goyalpike.github.io/
+    - icon: fontawesome/brands/linkedin
+      link: https://www.linkedin.com/in/goyalpawank/
+    - icon: fontawesome/brands/x-twitter
+      link: https://x.com/pkgpawan
