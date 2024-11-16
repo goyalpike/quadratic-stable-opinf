@@ -86,7 +86,7 @@ if not os.path.exists(Params.path):
 
 # ## Loading data
 
-data = loadmat("./Burgers_data/Burgers_dirichilet_data.mat")
+data = loadmat("./data/Burgers_dirichilet_data.mat")
 # A = data["Af"]
 # H = data["H"]
 
