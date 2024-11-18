@@ -1,0 +1,17 @@
+name: docker_compose_project
+services:
+    qsopinf:
+        # stdin_open: true
+        # tty: true
+        command: sleep infinity
+        container_name: qsopinf_container
+        ports:
+            - 8888:8888
+        image: qs-opinf-image-cpu
+        build: 
+          dockerfile: ./Dockerfile
+          context: .
+        volumes:
+            - type: bind
+              source: ./
+              target: /usr/src/qsopinf_project
