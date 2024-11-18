@@ -20,7 +20,7 @@ For high-dimensional data, we utilize proper orthogonal decoposition to obtain a
 For reproducibility, we suggest to create a conda virtual enviornment that installs required python and pytorch verions. The reason is to have automatically cross plateform installation of pytorch since with poetry is rather complicated. It is followed by installing dependencies using poetry. The instrusions are as follows:
 
 ```bash
-conda env create -n enviornment.yml
+conda env create -f environment.yml
 conda activate quad-stable-opinf
 poetry install --all-extras
 ```
@@ -36,6 +36,22 @@ so that poetry does not hang.
 
 ## 📁 **Examples**
  Numeical exampels considered in the paper are in `Example folder`. All the results reported in the paper can be reproduced using `run_examples.sh`. 
+
+## Docker Setup
+The results can be reproduced via docker image as well. Please first build a docker image using e.g.,
+```bash
+docker build -t qs-opinf-image-cpu .
+```
+Then, run the following command to create a container 
+```bash
+docker run -v LocalPath_to_Save_Results:/app/Examples/Results -it qs-opinf-image-cpu
+```
+In the above, we have mounted the volumn so that the generated resulted can be saved locally, otherwise they will be gone once containers is removed. Once the container is up and runnning, you can generate results using 
+```bash
+bash run_examples.sh
+```
+
+Note that here docker image is generated for `cpu` only. However, if `gpu` compatible installation is needed then remove `cpuonly` dependency from `environment.yml`.
 
 ## 📜 **License**
 See the [LICENSE](LICENSE) file for license rights and limitations (MIT).

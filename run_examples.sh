@@ -1,9 +1,5 @@
 #!/bin/bash
 
-# source /scratch/Goyalp/miniconda3/etc/profile.d/conda.sh
-
-# conda activate quadstable_updated
-
 python --version 
 
 EPOCHS=12000
@@ -80,11 +76,6 @@ python Example_Burgers_Neumann_Stability_reg.py --model_hypothesis globalstabili
 echo ""
 
 # jupyter nbconvert --execute --to notebook --inplace Plotting_Burgers_Neumann_orders.ipynb
-
-# # Extracting figures for paper from the result folder
-# bash extract_figures_for_papers.sh
-
-
 
 
 
