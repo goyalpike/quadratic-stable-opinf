@@ -3,7 +3,9 @@ channels:
   - pytorch
   - conda-forge
 dependencies:
-  - python=3.11
-  - pytorch=1.13
-  - numpy=1.23
+  - python=3.10
+  - pytorch=1.12
+  - cpuonly
   - poetry
+  - mkl=2024.0
+  - numpy=1.24.4
