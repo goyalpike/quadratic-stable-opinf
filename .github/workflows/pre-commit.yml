@@ -1,0 +1,27 @@
+name: Code-quality checks
+
+on:
+    push:
+        branches:
+            - main
+            - ci-cd-setup
+    workflow_dispatch:  # Allow manual triggering
+
+
+jobs:
+    pre-commit:
+        runs-on: ubuntu-latest  # Use a valid GitHub runner, like ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - name: Install Poetry
+              run: |
+                pip install pipx
+                pipx install poetry
+            - name: Set up python version 
+              uses: actions/setup-python@v5
+              with:
+                python-version: '3.10'
+                cache: 'poetry'
+            - name: Install Dependencies
+              run: poetry install
+            - run: poetry run pre-commit run --all-files
