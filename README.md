@@ -1,5 +1,5 @@
 
-**Code quality** ![pre-commit status](https://gitlab.mpi-magdeburg.mpg.de/goyalp/quadratic-stable-opinf/badges/main/pipeline.svg?job=code_check) | [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![Code-quality](https://github.com/goyalpike/quadratic-stable-opinf/actions/workflows/pre-commit.yml/badge.svg)](https://github.com/goyalpike/quadratic-stable-opinf/actions/workflows/pre-commit.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
 
 # 🎯 **[Guaranteed Stable Quadratic Models and Their Applications in SINDy and Operator Inference](https://arxiv.org/abs/2308.13819)**
